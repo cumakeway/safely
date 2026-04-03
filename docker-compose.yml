@@ -1,0 +1,16 @@
+version: "3"
+networks:
+  safely_task_manager:
+services:
+  web:
+    container_name: safely_task_mgr_web
+    networks:
+      - safely_task_manager
+    build: .
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./src:/var/www/html
+      - ./000-default.conf:/etc/apache2/sites-available/000-default.conf
+    ports:
+      - 8182:80
