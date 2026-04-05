@@ -49,11 +49,14 @@ Docker Compose installed
 
 ### 6. Install dependencies inside the container:
 `docker-compose exec app composer install`
+
 `docker-compose exec app php artisan key:generate`
+
 `docker-compose exec app php artisan migrate --seed`
 
+
 ### 7.Access the application:
-`http://localhost:{PORT_NUMBER}` The port number set in the docker-compose.yml is 8182. Feel free to change to any port number you wish.
+`http://localhost:{PORT_NUMBER}` The port number set in the `docker-compose.yml` is 8182. Feel free to change to any port number you wish.
 
 ### To stop the app: `docker-compose down`
 
