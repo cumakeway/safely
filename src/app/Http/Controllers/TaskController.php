@@ -33,7 +33,7 @@ class TaskController extends Controller
 
         $tasks = $query->orderByRaw("FIELD(priority, 'high', 'medium', 'low')")
                        ->orderBy('due_date')
-                       ->paginate(10)
+                       ->paginate(15)
                        ->withQueryString();
 
         $users = User::whereHas('role', fn ($q) => $q->where('name', 'worker'))
