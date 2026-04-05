@@ -97,3 +97,8 @@ MySQL
 1. `RolesSeeder` — creates `manager` and `worker` roles
 2. `UsersSeeder` — creates 2 managers + 3 workers
 3. `TasksSeeder` — creates 8 sample tasks (mix of statuses, priorities, overdue)
+
+If I had more time, I would have implemented the following features:
+
+1. Workers should only see tasks assigned to them when they log in
+2. Delete task by managers
