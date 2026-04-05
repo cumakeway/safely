@@ -11,7 +11,7 @@
 
 | Feature | Detail |
 |---|---|
-| Create tasks | Title, description, due date, assigned user, priority |
+| Create / Edit tasks | Title, description, due date, assigned user, priority |
 | Task dashboard | Paginated table with status/user/date filters |
 | Status updates | Complete or non-compliant — via AJAX (no full page reload) |
 | Corrective action | Required when marking non-compliant; captured via modal |
