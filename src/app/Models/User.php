@@ -41,4 +41,34 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+ 
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_user_id');
+    }
+ 
+    public function createdTasks()
+    {
+        return $this->hasMany(Task::class, 'created_by');
+    }
+ 
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role?->name === 'manager';
+    }
+ 
+    public function isWorker(): bool
+    {
+        return $this->role?->name === 'worker';
+    }
 }
