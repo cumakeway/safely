@@ -101,4 +101,27 @@ MySQL
 If I had more time, I would have implemented the following features:
 
 1. Workers should only see tasks assigned to them when they log in
-2. Delete task by managers
+2. Delete task by managers.
+
+## Assumptions
+* The system has two primary roles: Manager and Worker.
+    * Managers can create and edit tasks.
+    * Workers can view and update task status.
+* Tasks are assigned to a single user (no multi-assignment).
+* A task marked as non-compliant  cannot be updated.
+* The application is intended for internal use, so authentication is simple (no registration flow).
+* Pagination is server-side and limited to a reasonable default (15 tasks per page).
+* Date comparisons (e.g., overdue, due today) are based on the server timezone.
+* Activity logs are recorded for key actions (e.g., task creation and updates), but not for every minor interaction.
+
+## AI USE
+Claude was used to 
+1. Generate blade templates, migrations, and seeders, 
+2. Speed up scaffolding and boilerplate generation, 
+3. Refine UX structure 
+4. Improve code structure
+
+All generated suggestions were:
+* Reviewed and adapted to fit the project requirements
+* Tested locally to ensure correctness
+* Modified where necessary to maintain code quality and consistency
