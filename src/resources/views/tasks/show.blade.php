@@ -16,7 +16,7 @@
         <p><strong>Created By:</strong> {{ $task->creator->name }}</p>
         <p><strong>Priority:</strong> {{ ucfirst($task->priority) }}</p>
         <p><strong>Status:</strong> {{ $task->status }}</p>
-        <p><strong>Due Date:</strong> {{ $task->due_date }}</p>
+        <p><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($task->due_date)->format('d M Y') }}</p>
 
         @if($task->corrective_action)
             <div class="alert alert-danger mt-3">

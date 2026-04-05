@@ -52,7 +52,8 @@
     </div>
 </form>
 
-{{-- TASK TABLE --}}
+<div id="alert-container"></div>
+
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -66,8 +67,22 @@
     </thead>
     <tbody>
         @foreach($tasks as $task)
+        @php
+            $dueDate = \Carbon\Carbon::parse($task->due_date)->toDateString();
+            $today = now()->toDateString();
+        @endphp
             <tr id="task-row-{{ $task->id }}"
-                class="{{ $task->due_date < today() && $task->status != 'completed' ? 'table-danger' : '' }}">
+            class="
+                {{
+                    $task->status != 'completed' && $dueDate < $today
+                    ? 'table-danger'
+                    : (
+                        $task->status != 'completed' && $dueDate === $today
+                        ? 'table-warning'
+                        : ''
+                    )
+                }}
+            ">
 
                 <td>
                     <a href="{{ route('tasks.show', $task->id) }}">
@@ -80,7 +95,7 @@
                         {{ ucfirst($task->priority) }}
                     </span>
                 </td>
-                <td>{{ $task->due_date }}</td>
+                <td>{{ \Carbon\Carbon::parse($task->due_date)->format('d M Y') }}</td>
 
                 <td>
                     @if($task->status == "pending")
@@ -100,10 +115,9 @@
 
                 <td>
                     @if($task->status === 'pending')
-                        @if(auth()->user()->role->name === 'manager')
-                        <button class="btn btn-warning btn-sm update-status"
-                                data-id="{{ $task->id }}"
-                                data-status="non_compliant">
+                      @if(auth()->user()->isManager())
+                        <button class="btn btn-warning btn-sm edit-task"
+                                data-id="{{ $task->id }}">
                             Edit
                         </button>
                         @endif
@@ -125,7 +139,13 @@
     </tbody>
 </table>
 
+<div class="mt-3">
+    {{ $tasks->links() }}
+</div>
+
 @include('tasks.partials.create-modal')
+
+@include('tasks.partials.edit-modal')
 
 <div class="modal fade" id="nonCompliantModal" tabindex="-1">
     <div class="modal-dialog">
@@ -161,169 +181,215 @@
 @section('scripts')
 <script>
 
-// OPEN MODAL
-$('.open-non-compliant-modal').click(function () {
-    let taskId = $(this).data('id');
+    $('.open-non-compliant-modal').click(function () {
+        let taskId = $(this).data('id');
 
-    $('#modal-task-id').val(taskId);
-    $('#corrective-action-input').val('');
+        $('#modal-task-id').val(taskId);
+        $('#corrective-action-input').val('');
 
-    let modal = new bootstrap.Modal(document.getElementById('nonCompliantModal'));
-    modal.show();
-});
-
-// SUBMIT NON-COMPLIANT
-$('#submit-non-compliant').click(function () {
-
-    let taskId = $('#modal-task-id').val();
-    let correctiveAction = $('#corrective-action-input').val();
-
-    if (!correctiveAction.trim()) {
-        alert('Corrective action is required');
-        return;
-    }
-
-    $.ajax({
-        url: `/tasks/${taskId}/status`,
-        method: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            status: 'non_compliant',
-            corrective_action: correctiveAction
-        },
-        success: function () {
-
-            let row = $(`#task-row-${taskId}`);
-
-            row.find('.status-text')
-                .text('non_compliant')
-                .removeClass('bg-info')
-                .addClass('bg-danger');
-
-            row.find('td:last').html('');
-
-            bootstrap.Modal.getInstance(document.getElementById('nonCompliantModal')).hide();
-        }
+        let modal = new bootstrap.Modal(document.getElementById('nonCompliantModal'));
+        modal.show();
     });
-});
 
-// COMPLETED (unchanged)
-$('.update-status').click(function () {
-    let taskId = $(this).data('id');
+    $('#submit-non-compliant').click(function () {
 
-    $.ajax({
-        url: `/tasks/${taskId}/status`,
-        method: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            status: 'completed'
-        },
-        success: function () {
+        let taskId = $('#modal-task-id').val();
+        let correctiveAction = $('#corrective-action-input').val();
 
-            let row = $(`#task-row-${taskId}`);
-
-            row.find('.status-text')
-                .text('completed')
-                .removeClass('bg-info')
-                .addClass('bg-success');
-
-            row.find('td:last').html('');
+        if (!correctiveAction.trim()) {
+            alert('Corrective action is required');
+            return;
         }
-    });
-});
 
-// $('#createTaskForm').on('submit', function (e) {
-//         e.preventDefault();
-//         const $form = $(this);
-//         const $btn  = $('#createTaskSubmitBtn').addClass('loading').prop('disabled', true);
- 
-//         $.ajax({
-//             url:  $form.attr('action'),
-//             method:  'POST',
-//             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-//             data:    $form.serialize(),
-//             success(data) {
-//               $('#createTaskModal').hide();
-//                 flashAlert('success', '<i class="bi bi-check-circle me-2"></i>Task created! Refreshing…');
-//                 setTimeout(() => location.reload(), 1200);
-//             },
-//             error(xhr) {
-              
-//                 $form.find('.is-invalid').removeClass('is-invalid');
-//                 $form.find('.invalid-feedback').text('');
- 
-//                 if (xhr.status === 422) {
-//                     const errors = xhr.responseJSON?.errors ?? {};
-//                     $.each(errors, function (field, messages) {
-//                         const $input = $form.find('[name="' + field + '"]');
-//                         $input.addClass('is-invalid');
-//                         $input.siblings('.invalid-feedback').text(messages[0]);
-//                     });
-//                 } else {
-//                     flashAlert('danger', 'Something went wrong. Please try again.');
-//                 }
-//             },
-//             complete() {
-//                 $btn.removeClass('loading').prop('disabled', false);
-//             }
-//         });
-// });
+        $.ajax({
+            url: `/tasks/${taskId}/status`,
+            method: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                status: 'non_compliant',
+                corrective_action: correctiveAction
+            },
+            success: function () {
 
-$('#createTaskForm').submit(function (e) {
-    e.preventDefault();
+                let row = $(`#task-row-${taskId}`);
 
-    let form = $(this);
-    let url = form.attr('action');
-    let formData = form.serialize();
+                row.find('.status-text')
+                    .text('non_compliant')
+                    .removeClass('bg-info')
+                    .addClass('bg-danger');
 
-    let submitBtn = $('#createTaskSubmitBtn');
-    let spinner = submitBtn.find('.spinner-border');
-    let btnText = submitBtn.find('.btn-text');
+                row.find('td:last').html('');
 
-    // Reset errors
-    form.find('.invalid-feedback').text('');
-    form.find('.form-control, .form-select').removeClass('is-invalid');
-
-    // Show loading
-    spinner.removeClass('d-none');
-    btnText.text('Creating...');
-
-    $.ajax({
-        url: url,
-        method: 'POST',
-        data: formData,
-
-        success: function (response) {
-            $('<div class="alert alert-success alert-dismissible fade show mt-2">' +
-                response.message +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-            '</div>')
-            .prependTo('.container');
-            
-            form[0].reset();
-            bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
-            location.reload(); 
-        },
-
-        error: function (response) {
-            if (response.status === 422) {
-                let errors = response.responseJSON.errors;
-
-                $.each(errors, function (key, value) {
-                    let input = form.find(`[name="${key}"]`);
-                    input.addClass('is-invalid');
-                    input.next('.invalid-feedback').text(value[0]);
-                });
-            } else {
-                alert('Something went wrong');
+                bootstrap.Modal.getInstance(document.getElementById('nonCompliantModal')).hide();
             }
-        },
-
-        complete: function () {
-            spinner.addClass('d-none');
-            btnText.html('<i class="bi bi-plus-lg me-1"></i>Create Task');
-        }
+        });
     });
-});
+
+    $('.update-status').click(function () {
+        let taskId = $(this).data('id');
+
+        $.ajax({
+            url: `/tasks/${taskId}/status`,
+            method: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                status: 'completed'
+            },
+            success: function () {
+
+                let row = $(`#task-row-${taskId}`);
+
+                row.find('.status-text')
+                    .text('completed')
+                    .removeClass('bg-info')
+                    .addClass('bg-success');
+
+                row.find('td:last').html('');
+            }
+        });
+    });
+
+    $('#createTaskForm').submit(function (e) {
+        e.preventDefault();
+
+        let form = $(this);
+        let url = form.attr('action');
+        let formData = form.serialize();
+
+        let submitBtn = $('#createTaskSubmitBtn');
+        let spinner = submitBtn.find('.spinner-border');
+        let btnText = submitBtn.find('.btn-text');
+
+        form.find('.invalid-feedback').text('');
+        form.find('.form-control, .form-select').removeClass('is-invalid');
+
+        spinner.removeClass('d-none');
+        btnText.text('Creating...');
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: formData,
+
+            success: function (response) {
+            
+                $('#alert-container').html(
+                    '<div class="alert alert-success alert-dismissible fade show">' +
+                    response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                    '</div>'
+                );
+
+                form[0].reset();
+                bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+
+            },
+
+            error: function (response) {
+                if (response.status === 422) {
+                    let errors = response.responseJSON.errors;
+
+                    $.each(errors, function (key, value) {
+                        let input = form.find(`[name="${key}"]`);
+                        input.addClass('is-invalid');
+                        input.next('.invalid-feedback').text(value[0]);
+                    });
+                } else {
+                    alert('Something went wrong');
+                }
+            },
+
+            complete: function () {
+                spinner.addClass('d-none');
+                btnText.html('<i class="bi bi-plus-lg me-1"></i>Create Task');
+            }
+        });
+    });
+
+    $('.edit-task').click(function () {
+        let taskId = $(this).data('id');
+        
+        $.ajax({
+            url: `/tasks/${taskId}/edit`,
+            method: 'GET',
+
+            success: function (response) {
+
+                let task = response.task;
+
+                let formattedDate = task.due_date.split('T')[0];
+
+                $('#edit-task-id').val(task.id);
+                $('#editTaskForm input[name="title"]').val(task.title);
+                $('#editTaskForm textarea[name="description"]').val(task.description);
+
+                $('#editTaskForm input[name="due_date"]').val(formattedDate);
+
+                $('#editTaskForm select[name="assigned_user_id"]').val(task.assigned_user_id);
+                $('#editTaskForm select[name="priority"]').val(task.priority);
+
+                let modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+                modal.show();
+            },
+
+            error: function (response) {
+                console.error(response.responseText);
+                alert('Failed to load task data');
+            }
+        });
+
+    });
+
+    $('#editTaskForm').submit(function (e) {
+        e.preventDefault();
+
+        let taskId = $('#edit-task-id').val();
+        let form = $(this);
+
+        let formData = form.serialize();
+
+        form.find('.is-invalid').removeClass('is-invalid');
+        form.find('.invalid-feedback').text('');
+
+        $.ajax({
+            url: `/tasks/${taskId}`,
+            method: 'POST', 
+            data: formData,
+
+            success: function (response) {
+
+                bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+
+                $('#alert-container').html(
+                    '<div class="alert alert-success alert-dismissible fade show">' +
+                    response.message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                    '</div>'
+                );
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            },
+
+            error: function (response) {
+
+                if (response.status === 422) {
+                    let errors = xhr.responseJSON.errors;
+
+                    $.each(errors, function (key, value) {
+                        let input = form.find(`[name="${key}"]`);
+                        input.addClass('is-invalid');
+                        input.next('.invalid-feedback').text(value[0]);
+                    });
+                }
+            }
+        });
+    });
+
 </script>
 @endsection

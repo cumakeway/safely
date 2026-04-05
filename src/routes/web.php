@@ -31,6 +31,8 @@ Route::middleware(['auth', 'role:worker,manager'])->group(function () {
 
 Route::middleware(['auth', 'role:manager'])->group(function () {
  Route::post('/create/task', [TaskController::class, 'store'])->name('task.create');
+ Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('task.edit');
+ Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
 });
 
 Route::get('/tasks', [TaskController::class, 'index'])

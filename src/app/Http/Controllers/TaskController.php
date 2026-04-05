@@ -33,20 +33,19 @@ class TaskController extends Controller
 
         $tasks = $query->orderByRaw("FIELD(priority, 'high', 'medium', 'low')")
                        ->orderBy('due_date')
-                       ->paginate(15)
+                       ->paginate(10)
                        ->withQueryString();
 
         $users = User::whereHas('role', fn ($q) => $q->where('name', 'worker'))
                      ->orderBy('name')
                      ->get();
 
-         return view('tasks.index', compact('tasks', 'users', 'dateFilter'));
+        return view('tasks.index', compact('tasks', 'users', 'dateFilter'));
    }
 
    public function show(Task $task)
    {
         $task->load(['assignedUser', 'creator', 'activityLogs.user']);
- 
         return view('tasks.show', compact('task'));
     }
 
@@ -102,6 +101,33 @@ class TaskController extends Controller
             'success' => true,
             'message' => 'Task created successfully',
         ]);
-
     }
+
+    public function edit(Task $task)
+    {
+        return response()->json([
+            'task' => $task
+        ]);
+    }
+
+    public function update(StoreTaskRequest $request, Task $task)
+    {
+        $data = $request->validated();
+
+        $task->update($data);
+
+        ActivityLog::create([
+            'task_id'     => $task->id,
+            'user_id'     => $request->user()->id,
+            'action'      => 'task_updated',
+            'description' => "Task '{$task->title}' was updated.",
+            'changes'     => json_encode($data),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Task updated successfully',
+            'task' => $task->load('assignedUser')
+        ]);
+    } 
 }
