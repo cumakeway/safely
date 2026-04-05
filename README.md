@@ -81,7 +81,9 @@ MySQL
 
 ### 4. Configure your .env:
 `DB_DATABASE=your_db`
+
 `DB_USERNAME=your_user`
+
 `DB_PASSWORD=your_password`
 
 ### 5. Generate app key:
